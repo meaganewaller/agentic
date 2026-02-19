@@ -1,6 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
 
+use agentic::adapters::adapter::VendorAdapter;
+use agentic::adapters::{claude::ClaudeAdapter, codex::CodexAdapter};
+
 #[derive(Debug, Parser)]
 struct Args {
     #[arg(long, default_value = "./layers")]
@@ -11,8 +14,6 @@ struct Args {
     machine: Option<String>,
     #[arg(long)]
     project: Option<String>,
-    #[arg(long)]
-    out: Option<String>,
     #[arg(long)]
     dry_run: bool,
 }
@@ -27,24 +28,34 @@ fn main() -> Result<()> {
         args.project.as_deref(),
     )?;
 
-    let compiled = agentic::adapters::claude::compile(&merged)?;
+    let adapters: Vec<Box<dyn VendorAdapter>> = vec![
+        Box::new(ClaudeAdapter),
+        Box::new(CodexAdapter),
+    ];
 
-    if args.dry_run {
-        println!("{}", serde_json::to_string_pretty(&compiled)?);
-        println!("(dry-run: not writing to disk)");
-        return Ok(());
+    for adapter in adapters {
+        // Only process if vendor exists in config
+        if merged
+            .get("vendors")
+            .and_then(|v| v.get(adapter.name()))
+            .is_none()
+        {
+            continue;
+        }
+
+        let compiled = adapter.compile(&merged)?;
+
+        if args.dry_run {
+            println!("=== {} ===", adapter.name());
+            println!("{}", serde_json::to_string_pretty(&compiled)?);
+            continue;
+        }
+
+        let output_path = adapter.default_output_path()?;
+        agentic::output::write_json_to_path(&output_path, &compiled)?;
+
+        println!("Wrote {} config to {}", adapter.name(), output_path.display());
     }
-
-    let output_path = if let Some(out) = args.out {
-        std::path::PathBuf::from(out)
-    } else {
-        agentic::output::default_claude_path()?
-    };
-
-    agentic::output::write_json_to_path(&output_path, &compiled)?;
-
-    println!("Wrote Claude config to {}", output_path.display());
 
     Ok(())
 }
-

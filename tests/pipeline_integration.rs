@@ -1,15 +1,17 @@
 use std::fs;
-use std::path::Path;
 
-use serde_json::Value;
+use agentic::adapters::adapter::VendorAdapter;
+use tempfile::tempdir;
 
 #[test]
-fn full_pipeline_builds_expected_claude_config() {
-    // Create a temporary layers directory
-    let temp_dir = tempfile::tempdir().expect("create temp dir");
-    let layers_path = temp_dir.path();
+fn full_pipeline_merges_layers_and_compiles_multiple_vendors() {
+    // Create temp directory
+    let temp = tempdir().expect("create temp dir");
+    let layers_path = temp.path();
 
+    // ------------------------
     // Write base.yaml
+    // ------------------------
     fs::write(
         layers_path.join("base.yaml"),
         r#"
@@ -18,11 +20,17 @@ vendors:
     enabled: true
     model: "claude-3-opus"
     temperature: 0.2
+
+  codex:
+    model: "gpt-4.1"
+    temperature: 0.3
 "#,
     )
     .unwrap();
 
+    // ------------------------
     // Write profile-work.yaml
+    // ------------------------
     fs::write(
         layers_path.join("profile-work.yaml"),
         r#"
@@ -33,17 +41,39 @@ vendors:
     )
     .unwrap();
 
+    // ------------------------
+    // Build merged config
+    // ------------------------
     let merged = agentic::pipeline::build_merged_config(
         layers_path.to_str().unwrap(),
         Some("work"),
         None,
         None,
     )
-    .unwrap();
+    .expect("merge should succeed");
 
-    let compiled = agentic::adapters::claude::compile(&merged).unwrap();
+    // ------------------------
+    // Claude compilation
+    // ------------------------
+    let claude_adapter = agentic::adapters::claude::ClaudeAdapter;
+    let claude_compiled = claude_adapter.compile(&merged).unwrap();
 
-    assert_eq!(compiled["model"], "claude-3-opus");
-    assert_eq!(compiled["temperature"], 0.0);
-    assert_eq!(compiled["enabled"], true);
+    assert_eq!(claude_compiled["enabled"], true);
+    assert_eq!(claude_compiled["model"], "claude-3-opus");
+    assert_eq!(claude_compiled["temperature"], 0.0); // overridden by profile
+
+    // ------------------------
+    // Codex compilation
+    // ------------------------
+    let codex_adapter = agentic::adapters::codex::CodexAdapter;
+    let codex_compiled = codex_adapter.compile(&merged).unwrap();
+
+    assert_eq!(codex_compiled["model"], "gpt-4.1");
+    assert_eq!(codex_compiled["temperature"], 0.3);
+
+    // ------------------------
+    // Ensure agentic version injected
+    // ------------------------
+    assert_eq!(claude_compiled["agentic_version"], "0.1.0");
+    assert_eq!(codex_compiled["agentic_version"], "0.1.0");
 }
