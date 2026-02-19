@@ -5,3 +5,4 @@ pub mod io;
 pub mod config;
 pub mod adapters;
 pub mod output;
+pub mod context;

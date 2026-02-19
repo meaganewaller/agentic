@@ -25,12 +25,24 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    let detected_machine = if args.machine.is_none() {
+        Some(agentic::context::detect_hostname()?)
+    } else {
+        None
+    };
+    
+    let machine_name = args.machine
+        .as_deref()
+        .or(detected_machine.as_deref());
+    
     let merged = agentic::pipeline::build_merged_config(
         &args.layers,
         args.profile.as_deref(),
-        args.machine.as_deref(),
+        machine_name,
         args.project.as_deref(),
     )?;
+    
+    
 
     let adapters: Vec<Box<dyn VendorAdapter>> = vec![
         Box::new(ClaudeAdapter),
