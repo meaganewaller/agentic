@@ -16,6 +16,10 @@ struct Args {
     project: Option<String>,
     #[arg(long)]
     dry_run: bool,
+
+    /// Vendor(s) to build (e.g. --vendor claude --vendor codex)
+    #[arg(long)]
+    vendor: Vec<String>,
 }
 
 fn main() -> Result<()> {
@@ -33,8 +37,24 @@ fn main() -> Result<()> {
         Box::new(CodexAdapter),
     ];
 
+    // Determine which vendors are requested
+    let requested_vendors = if args.vendor.is_empty() {
+        None
+    } else {
+        Some(args.vendor.iter().map(|v| v.to_lowercase()).collect::<Vec<_>>())
+    };
+
     for adapter in adapters {
-        // Only process if vendor exists in config
+        let name = adapter.name();
+
+        // Skip if vendor filter provided and this one isn't included
+        if let Some(ref list) = requested_vendors {
+            if !list.contains(&name.to_string()) {
+                continue;
+            }
+        }
+
+        // Skip if vendor doesn't exist in config
         if merged
             .get("vendors")
             .and_then(|v| v.get(adapter.name()))
