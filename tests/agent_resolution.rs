@@ -96,7 +96,7 @@ vendors:
     let compiled = adapter
         .compile(agentic::adapters::adapter::CompileInput {
             merged: &output.merged,
-            resolved_agent_prompt: output.resolved_agent_prompt.as_ref(),
+            resolved_agent_prompt: output.resolved_agent_prompt.as_deref(),
         })
         .unwrap();
 

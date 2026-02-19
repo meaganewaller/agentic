@@ -59,7 +59,7 @@ vendors:
     let claude_compiled = claude_adapter
         .compile(CompileInput {
             merged: &output.merged,
-            resolved_agent_prompt: output.resolved_agent_prompt.as_ref(),
+            resolved_agent_prompt: output.resolved_agent_prompt.as_deref(),
         })
         .unwrap();
 
@@ -74,7 +74,7 @@ vendors:
     let codex_compiled = codex_adapter
         .compile(CompileInput {
             merged: &output.merged,
-            resolved_agent_prompt: output.resolved_agent_prompt.as_ref(),
+            resolved_agent_prompt: output.resolved_agent_prompt.as_deref(),
         })
         .unwrap();
 

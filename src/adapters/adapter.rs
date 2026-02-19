@@ -4,9 +4,8 @@ use std::path::PathBuf;
 
 pub struct CompileInput<'a> {
     pub merged: &'a Value,
-    pub resolved_agent_prompt: Option<&'a String>,
+    pub resolved_agent_prompt: Option<&'a str>,
 }
-
 
 pub trait VendorAdapter {
     fn name(&self) -> &'static str;
