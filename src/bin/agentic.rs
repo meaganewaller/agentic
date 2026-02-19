@@ -30,6 +30,18 @@ fn main() -> Result<()> {
     } else {
         None
     };
+
+    let detected_project = if args.project.is_none() {
+        agentic::context::detect_project_config()
+    } else {
+        None
+    };
+
+    let project_path_owned: Option<String> = match args.project {
+        Some(ref p) => Some(p.clone()),
+        None => detected_project
+            .and_then(|p| p.to_str().map(|s| s.to_string())),
+    };
     
     let machine_name = args.machine
         .as_deref()
@@ -39,10 +51,8 @@ fn main() -> Result<()> {
         &args.layers,
         args.profile.as_deref(),
         machine_name,
-        args.project.as_deref(),
+        project_path_owned.as_deref(),
     )?;
-    
-    
 
     let adapters: Vec<Box<dyn VendorAdapter>> = vec![
         Box::new(ClaudeAdapter),
