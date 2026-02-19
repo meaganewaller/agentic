@@ -11,6 +11,7 @@ use crate::validation::validate_config;
 pub struct PipelineOutput {
     pub merged: Value,
     pub resolved_agent_prompt: Option<String>,
+    pub layers: Vec<(String, Value)>, // (filename, json value)
 }
 
 pub fn build_output(
@@ -19,7 +20,7 @@ pub fn build_output(
     machine: Option<&str>,
     project: Option<&str>,
 ) -> Result<PipelineOutput> {
-    let merged = build_merged_config(layers_dir, profile, machine, project)?;
+    let (merged, layers) = build_with_layers(layers_dir, profile, machine, project)?;
 
     // Resolve agent bundle (optional)
     let resolved = crate::agents::resolver::resolve_agent_bundle(&merged)?
@@ -28,15 +29,16 @@ pub fn build_output(
     Ok(PipelineOutput {
         merged,
         resolved_agent_prompt: resolved,
+        layers,
     })
 }
 
-pub fn build_merged_config(
+fn build_with_layers(
     layers_dir: &str,
     profile: Option<&str>,
     machine: Option<&str>,
     project: Option<&str>,
-) -> Result<Value> {
+) -> Result<(Value, Vec<(String, Value)>)> {
     let layers_dir = PathBuf::from(layers_dir);
 
     let spec = LayerSpec {
@@ -47,6 +49,7 @@ pub fn build_merged_config(
     };
 
     let mut merged = Value::Object(Default::default());
+    let mut layers: Vec<(String, Value)> = Vec::new();
 
     for path in spec.ordered_paths() {
         if !path.exists() {
@@ -55,9 +58,29 @@ pub fn build_merged_config(
 
         let yaml = read_yaml(&path)?;
         let json = yaml_to_json(yaml);
+
+        layers.push((
+            path.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string(),
+            json.clone(),
+        ));
+
         merged = deep_merge(merged, json);
         validate_config(&merged)?;
     }
 
+    Ok((merged, layers))
+}
+
+pub fn build_merged_config(
+    layers_dir: &str,
+    profile: Option<&str>,
+    machine: Option<&str>,
+    project: Option<&str>,
+) -> Result<Value> {
+    let (merged, _) = build_with_layers(layers_dir, profile, machine, project)?;
     Ok(merged)
 }
+

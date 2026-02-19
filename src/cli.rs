@@ -17,4 +17,8 @@ pub struct Args {
 
     #[arg(long)]
     pub out: Option<String>,
+
+    if args.explain {
+        agentic::explain::explain(&output);
+    }
 }

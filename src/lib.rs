@@ -8,3 +8,4 @@ pub mod output;
 pub mod context;
 pub mod validation;
 pub mod agents;
+pub mod explain;

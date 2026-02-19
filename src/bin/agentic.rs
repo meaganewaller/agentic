@@ -59,6 +59,10 @@ struct BuildArgs {
     /// Print output instead of writing files
     #[arg(long)]
     dry_run: bool,
+
+    /// Show how layered config values were resolved
+    #[arg(long)]
+    explain: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -88,6 +92,10 @@ fn main() -> anyhow::Result<()> {
 fn run_build(args: BuildArgs) -> anyhow::Result<()> {
     let output = build_pipeline(&args.common)?;
 
+    if args.explain {
+        agentic::explain::explain(&output);
+    }
+
     let adapters = agentic::adapters::registry::all_adapters();
 
     for adapter in adapters {
@@ -101,6 +109,7 @@ fn run_build(args: BuildArgs) -> anyhow::Result<()> {
             println!("{}", serde_json::to_string_pretty(&compiled)?);
             continue;
         }
+
 
         let path = adapter.default_output_path()?;
         agentic::output::write_json_to_path(&path, &compiled)?;
