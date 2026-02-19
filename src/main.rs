@@ -1,5 +1,7 @@
 mod cli;
 mod config;
+mod io;
+mod convert;
 
 use anyhow::Result;
 use clap::Parser;
@@ -17,9 +19,14 @@ fn main() -> Result<()> {
         project: args.project.as_ref().map(PathBuf::from),
     };
 
-    println!("layer order:");
     for p in spec.ordered_paths() {
-        println!("  {}", p.display());
+        if !p.exists() {
+            eprintln!("warning: missing {}", p.display());
+            continue;
+        }
+        let yaml = io::read_yaml(&p)?;
+        let json = convert::yaml_to_json(yaml);
+        println!("--- {} ---\n{}", p.display(), serde_json::to_string_pretty(&json)?);
     }
 
     Ok(())
