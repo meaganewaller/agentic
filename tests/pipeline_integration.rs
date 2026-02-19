@@ -111,3 +111,29 @@ vendors:
     assert!(claude.compile(&merged).is_ok());
     assert!(codex.compile(&merged).is_ok());
 }
+
+#[test]
+fn invalid_config_fails_validation() {
+    let temp = tempfile::tempdir().unwrap();
+    let layers_path = temp.path();
+
+    std::fs::write(
+        layers_path.join("base.yaml"),
+        r#"
+vendors:
+  claude:
+    temperature: "not-a-number"
+"#,
+    )
+    .unwrap();
+
+    let result = agentic::pipeline::build_merged_config(
+        layers_path.to_str().unwrap(),
+        None,
+        None,
+        None,
+    );
+
+    assert!(result.is_err());
+}
+

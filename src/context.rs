@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub fn detect_hostname() -> Result<String> {
     let raw = hostname::get()?

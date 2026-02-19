@@ -6,6 +6,7 @@ use crate::config::layer::LayerSpec;
 use crate::convert::yaml_to_json;
 use crate::io::read_yaml;
 use crate::merge::deep_merge;
+use crate::validation::validate_config;
 
 pub fn build_merged_config(
     layers_dir: &str,
@@ -32,6 +33,7 @@ pub fn build_merged_config(
         let yaml = read_yaml(&path)?;
         let json = yaml_to_json(yaml);
         merged = deep_merge(merged, json);
+        validate_config(&merged)?;
     }
 
     Ok(merged)
