@@ -13,6 +13,8 @@ struct Args {
     project: Option<String>,
     #[arg(long)]
     out: Option<String>,
+    #[arg(long)]
+    dry_run: bool,
 }
 
 fn main() -> Result<()> {
@@ -27,6 +29,12 @@ fn main() -> Result<()> {
 
     let compiled = agentic::adapters::claude::compile(&merged)?;
 
+    if args.dry_run {
+        println!("{}", serde_json::to_string_pretty(&compiled)?);
+        println!("(dry-run: not writing to disk)");
+        return Ok(());
+    }
+
     let output_path = if let Some(out) = args.out {
         std::path::PathBuf::from(out)
     } else {
@@ -39,3 +47,4 @@ fn main() -> Result<()> {
 
     Ok(())
 }
+
