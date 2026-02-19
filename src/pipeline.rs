@@ -8,6 +8,29 @@ use crate::io::read_yaml;
 use crate::merge::deep_merge;
 use crate::validation::validate_config;
 
+pub struct PipelineOutput {
+    pub merged: Value,
+    pub resolved_agent_prompt: Option<String>,
+}
+
+pub fn build_output(
+    layers_dir: &str,
+    profile: Option<&str>,
+    machine: Option<&str>,
+    project: Option<&str>,
+) -> Result<PipelineOutput> {
+    let merged = build_merged_config(layers_dir, profile, machine, project)?;
+
+    // Resolve agent bundle (optional)
+    let resolved = crate::agents::resolver::resolve_agent_bundle(&merged)?
+        .map(|ra| ra.system_prompt);
+
+    Ok(PipelineOutput {
+        merged,
+        resolved_agent_prompt: resolved,
+    })
+}
+
 pub fn build_merged_config(
     layers_dir: &str,
     profile: Option<&str>,

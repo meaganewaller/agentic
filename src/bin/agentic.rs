@@ -81,8 +81,18 @@ fn main() -> Result<()> {
             continue;
         }
 
-        let compiled = adapter.compile(&merged)?;
+        let output = agentic::pipeline::build_output(
+            &args.layers,
+            args.profile.as_deref(),
+            machine_name,
+            project_path_owned.as_deref(),
+        )?;
 
+        let compiled = adapter.compile(agentic::adapters::adapter::CompileInput {
+            merged: &output.merged,
+            resolved_agent_prompt: output.resolved_agent_prompt.as_ref(),
+        })?;
+        
         if args.dry_run {
             println!("=== {} ===", adapter.name());
             println!("{}", serde_json::to_string_pretty(&compiled)?);

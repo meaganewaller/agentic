@@ -1,6 +1,6 @@
 use std::fs;
 
-use agentic::adapters::adapter::VendorAdapter;
+use agentic::adapters::adapter::{CompileInput, VendorAdapter};
 use tempfile::tempdir;
 
 #[test]
@@ -44,7 +44,7 @@ vendors:
     // ------------------------
     // Build merged config
     // ------------------------
-    let merged = agentic::pipeline::build_merged_config(
+    let output = agentic::pipeline::build_output(
         layers_path.to_str().unwrap(),
         Some("work"),
         None,
@@ -56,7 +56,12 @@ vendors:
     // Claude compilation
     // ------------------------
     let claude_adapter = agentic::adapters::claude::ClaudeAdapter;
-    let claude_compiled = claude_adapter.compile(&merged).unwrap();
+    let claude_compiled = claude_adapter
+        .compile(CompileInput {
+            merged: &output.merged,
+            resolved_agent_prompt: output.resolved_agent_prompt.as_ref(),
+        })
+        .unwrap();
 
     assert_eq!(claude_compiled["enabled"], true);
     assert_eq!(claude_compiled["model"], "claude-3-opus");
@@ -66,7 +71,12 @@ vendors:
     // Codex compilation
     // ------------------------
     let codex_adapter = agentic::adapters::codex::CodexAdapter;
-    let codex_compiled = codex_adapter.compile(&merged).unwrap();
+    let codex_compiled = codex_adapter
+        .compile(CompileInput {
+            merged: &output.merged,
+            resolved_agent_prompt: output.resolved_agent_prompt.as_ref(),
+        })
+        .unwrap();
 
     assert_eq!(codex_compiled["model"], "gpt-4.1");
     assert_eq!(codex_compiled["temperature"], 0.3);
@@ -106,10 +116,14 @@ vendors:
     let claude = agentic::adapters::claude::ClaudeAdapter;
     let codex = agentic::adapters::codex::CodexAdapter;
 
-    use agentic::adapters::adapter::VendorAdapter;
+    use agentic::adapters::adapter::{CompileInput, VendorAdapter};
 
-    assert!(claude.compile(&merged).is_ok());
-    assert!(codex.compile(&merged).is_ok());
+    let input = CompileInput {
+        merged: &merged,
+        resolved_agent_prompt: None,
+    };
+    assert!(claude.compile(input).is_ok());
+    assert!(codex.compile(CompileInput { merged: &merged, resolved_agent_prompt: None }).is_ok());
 }
 
 #[test]
