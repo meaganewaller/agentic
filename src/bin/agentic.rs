@@ -1,8 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 
-use agentic::adapters::adapter::VendorAdapter;
-use agentic::adapters::{claude::ClaudeAdapter, codex::CodexAdapter};
+use agentic::adapters::registry::all_adapters;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -54,10 +53,7 @@ fn main() -> Result<()> {
         project_path_owned.as_deref(),
     )?;
 
-    let adapters: Vec<Box<dyn VendorAdapter>> = vec![
-        Box::new(ClaudeAdapter),
-        Box::new(CodexAdapter),
-    ];
+    let adapters = all_adapters();
 
     // Determine which vendors are requested
     let requested_vendors = if args.vendor.is_empty() {
