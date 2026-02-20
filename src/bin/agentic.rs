@@ -93,7 +93,17 @@ fn run_build(args: BuildArgs) -> anyhow::Result<()> {
     let output = build_pipeline(&args.common)?;
 
     if args.explain {
-        agentic::explain::explain(&output);
+        let keys = output
+            .merged
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        agentic::tui::explain::interactive_explain(keys, output.layers.clone(), output.merged.clone());
+
+        return Ok(());
     }
 
     let adapters = agentic::adapters::registry::all_adapters();
